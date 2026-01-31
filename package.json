@@ -1,0 +1,26 @@
+{
+  "name": "playapi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:saucedemo": "playwright test saucedemo.spec.ts",
+    "test:bdd": "cucumber-js --require-module ts-node/register --require features/step_definitions/**/*.ts features/**/*.feature",
+    "test:bdd:smoke": "cucumber-js --require-module ts-node/register --require features/step_definitions/**/*.ts features/**/*.feature --tags @smoke",
+    "test:bdd:positive": "cucumber-js --require-module ts-node/register --require features/step_definitions/**/*.ts features/**/*.feature --tags @positive",
+    "test:bdd:negative": "cucumber-js --require-module ts-node/register --require features/step_definitions/**/*.ts features/**/*.feature --tags @negative",
+    "test:bdd:report": "cucumber-js --require-module ts-node/register --require features/step_definitions/**/*.ts features/**/*.feature --format html:cucumber-report.html && start cucumber-report.html"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@cucumber/cucumber": "^12.6.0",
+    "@playwright/test": "^1.58.1",
+    "@types/node": "^25.0.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
+}

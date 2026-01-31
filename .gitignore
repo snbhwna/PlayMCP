@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Environment variables and sensitive data
+playwright.env.json
+.env
+.env.local
+.env.*.local
+
+# Test results and reports
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+playwright/.auth/
+cucumber-report.html
+cucumber-report.json
+cucumber-report.xml
+
+# Playwright artifacts
+downloads/
+screenshots/
+videos/
+traces/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS files
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+
+# Build output
+dist/
+build/
+out/
+
+# TypeScript
+*.tsbuildinfo
+
+# Temporary files
+temp/
+tmp/
+*.tmp
