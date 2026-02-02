@@ -265,23 +265,128 @@ open cucumber-report.html   # macOS
 xdg-open cucumber-report.html  # Linux
 ```
 
-## 🔄 CI/CD
+## 🔄 CI/CD Pipeline
 
-The project includes a GitHub Actions workflow that:
-- Runs on push to `main` branch and pull requests
-- Tests on multiple OS (Ubuntu, Windows, macOS)
-- Executes tests on multiple browsers
-- Generates and uploads test reports
-- Stores test artifacts
+The project includes a comprehensive GitHub Actions CI/CD pipeline that runs automatically on every push and pull request.
 
 **Workflow file:** `.github/workflows/playwright.yml`
+
+### Pipeline Features
+
+#### 🎭 Playwright Tests Job
+- **Platforms:** Ubuntu, Windows, macOS
+- **Browsers:** Chromium, Firefox, WebKit
+- **Total Combinations:** 9 test matrices (3 OS × 3 browsers)
+- **Artifacts:** HTML reports, test results, screenshots, videos
+
+#### 🥒 BDD Tests Job
+- **Test Suites:** All, Smoke, Positive, Negative
+- **Platform:** Ubuntu (runs in parallel)
+- **Reports Generated:** HTML, JSON, JUnit XML formats
+- **Execution:** Independent parallel jobs for each suite
+
+#### 📊 Test Report Job
+- Aggregates all test results
+- Publishes comprehensive summary to GitHub
+- Downloads all artifacts for review
+- Always runs (even if tests fail)
+
+### Triggers
+
+The pipeline runs on:
+- ✅ **Push** to `main`, `master`, or `develop` branches
+- ✅ **Pull Requests** to these branches
+- ✅ **Manual Dispatch** (workflow_dispatch)
+- ✅ **Scheduled** - Daily at midnight (cron: '0 0 * * *')
+
+### Setup Requirements
+
+#### 1. Configure GitHub Secrets
+
+Go to: **Repository → Settings → Secrets and Variables → Actions**
+
+Create a secret named `PLAYWRIGHT_ENV` with the following JSON content:
+
+```json
+{
+  "users": {
+    "standard": {
+      "username": "standard_user",
+      "password": "secret_sauce"
+    },
+    "locked": {
+      "username": "locked_out_user",
+      "password": "secret_sauce"
+    },
+    "problem": {
+      "username": "problem_user",
+      "password": "secret_sauce"
+    },
+    "performance": {
+      "username": "performance_glitch_user",
+      "password": "secret_sauce"
+    }
+  },
+  "baseUrl": "https://www.saucedemo.com"
+}
+```
+
+#### 2. Enable Actions
+
+Ensure GitHub Actions is enabled in your repository settings.
 
 ### Viewing CI/CD Results
 
 1. Go to your GitHub repository
 2. Click on the **Actions** tab
 3. Select the latest workflow run
-4. View test results and download artifacts
+4. View the test summary in the **Summary** section
+5. Download artifacts (reports) from the **Artifacts** section
+
+### Pipeline Jobs Overview
+
+```
+┌─────────────────────────────────────────────────┐
+│         Playwright & BDD Tests CI/CD            │
+└─────────────────────────────────────────────────┘
+                        ↓
+        ┌───────────────┴───────────────┐
+        ↓                               ↓
+┌──────────────────┐          ┌──────────────────┐
+│ Playwright Tests │          │   BDD Tests      │
+│  (9 matrices)    │          │  (4 suites)      │
+│                  │          │                  │
+│ • Ubuntu + 3     │          │ • All scenarios  │
+│ • Windows + 3    │          │ • Smoke tests    │
+│ • macOS + 3      │          │ • Positive tests │
+└──────────────────┘          │ • Negative tests │
+        ↓                     └──────────────────┘
+        └───────────────┬───────────────┘
+                        ↓
+            ┌──────────────────────┐
+            │   Test Report Job    │
+            │  (Always Executes)   │
+            │                      │
+            │ • Aggregates results │
+            │ • Publishes summary  │
+            │ • Stores artifacts   │
+            └──────────────────────┘
+```
+
+### Artifacts Generated
+
+Each pipeline run generates:
+
+**Playwright Tests:**
+- `playwright-report-{os}-{browser}` - HTML test reports
+- `playwright-results-{os}-{browser}` - Raw test results
+
+**BDD Tests:**
+- `cucumber-report-{suite}` - HTML reports
+- `cucumber-json-{suite}` - JSON format
+- `cucumber-junit-{suite}` - JUnit XML
+
+All artifacts are retained for 30 days.
 
 ## 🛠️ Troubleshooting
 

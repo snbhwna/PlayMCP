@@ -1,4 +1,4 @@
-name: Playwright Tests
+name: Playwright & BDD Tests CI/CD
 
 on:
   push:
@@ -6,10 +6,12 @@ on:
   pull_request:
     branches: [ main, master, develop ]
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight
 
 jobs:
-  test:
-    name: 'Playwright Tests - ${{ matrix.os }} - ${{ matrix.browser }}'
+  playwright-tests:
+    name: 'Playwright - ${{ matrix.os }} - ${{ matrix.browser }}'
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
     
@@ -45,7 +47,7 @@ jobs:
         env:
           CI: true
 
-      - name: Upload test results
+      - name: Upload Playwright Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -53,17 +55,92 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
-      - name: Upload test artifacts
+      - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.os }}-${{ matrix.browser }}
+          name: playwright-results-${{ matrix.os }}-${{ matrix.browser }}
           path: test-results/
           retention-days: 30
 
-  report:
-    name: 'Publish Test Report'
-    needs: test
+  bdd-tests:
+    name: 'BDD Tests - ${{ matrix.suite }}'
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [all, smoke, positive, negative]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Create environment file
+        run: |
+          echo '${{ secrets.PLAYWRIGHT_ENV }}' > playwright.env.json
+        shell: bash
+
+      - name: Run BDD Tests - All
+        if: matrix.suite == 'all'
+        run: npm run test:bdd
+        continue-on-error: false
+
+      - name: Run BDD Tests - Smoke
+        if: matrix.suite == 'smoke'
+        run: npm run test:bdd:smoke
+        continue-on-error: false
+
+      - name: Run BDD Tests - Positive
+        if: matrix.suite == 'positive'
+        run: npm run test:bdd:positive
+        continue-on-error: false
+
+      - name: Run BDD Tests - Negative
+        if: matrix.suite == 'negative'
+        run: npm run test:bdd:negative
+        continue-on-error: false
+
+      - name: Upload Cucumber HTML Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cucumber-report-${{ matrix.suite }}
+          path: cucumber-report.html
+          retention-days: 30
+
+      - name: Upload Cucumber JSON Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cucumber-json-${{ matrix.suite }}
+          path: cucumber-report.json
+          retention-days: 30
+
+      - name: Upload Cucumber JUnit Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cucumber-junit-${{ matrix.suite }}
+          path: cucumber-report.xml
+          retention-days: 30
+
+  test-report:
+    name: 'Publish Test Reports'
+    needs: [playwright-tests, bdd-tests]
     if: always()
     runs-on: ubuntu-latest
     
@@ -75,12 +152,28 @@ jobs:
 
       - name: Publish Test Summary
         run: |
-          echo "# 🎭 Playwright Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "# 🎭 Test Execution Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Playwright Tests" >> $GITHUB_STEP_SUMMARY
           echo "Test execution completed across multiple browsers and platforms." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 📊 Test Matrix" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Test Matrix" >> $GITHUB_STEP_SUMMARY
           echo "- **Browsers:** Chromium, Firefox, WebKit" >> $GITHUB_STEP_SUMMARY
           echo "- **Platforms:** Ubuntu, Windows, macOS" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "View detailed reports in the artifacts section." >> $GITHUB_STEP_SUMMARY
+          echo "## 🥒 BDD Cucumber Tests" >> $GITHUB_STEP_SUMMARY
+          echo "Behavior-Driven Development tests executed with Gherkin scenarios." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Suites Run" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ All scenarios" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔥 Smoke tests" >> $GITHUB_STEP_SUMMARY
+          echo "- ✨ Positive scenarios" >> $GITHUB_STEP_SUMMARY
+          echo "- ⚠️ Negative scenarios" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "View detailed reports in the artifacts section above." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
